@@ -1,0 +1,4 @@
+interface:
+  display_name: "MATLAB 数学建模"
+  short_description: "用 MATLAB 完成数模分析、优化、论文绘图与验证"
+  default_prompt: "使用 $matlab-math-modeling 完成这个小问的 MATLAB 建模、求解、绘图与结果验证。"

@@ -2,7 +2,10 @@
 
 面向中国研究生数学建模竞赛的 Codex Skill，提供从赛题读取、数据审计、逐问建模、模型比较与融合，到论文生成和交付验证的完整工作流。
 
-核心 Skill 位于 `solve-graduate-math-modeling/`。
+仓库包含两个可以独立安装、也可以协同调用的 Skill：
+
+- `solve-graduate-math-modeling/`：研究生数学建模端到端主流程。
+- `matlab-math-modeling/`：MATLAB 数据分析、数值建模、优化、科学绘图与结果验证后端。
 
 ## 主要能力
 
@@ -18,6 +21,7 @@
 ## 仓库结构
 
 ```text
+matlab-math-modeling/          # MATLAB 数模执行与绘图 Skill
 solve-graduate-math-modeling/
 ├── SKILL.md                  # Skill 入口与端到端流程
 ├── agents/openai.yaml        # Codex 界面元数据
@@ -34,11 +38,19 @@ solve-graduate-math-modeling/
 Copy-Item -Recurse -Force `
   .\solve-graduate-math-modeling `
   "$env:USERPROFILE\.codex\skills\solve-graduate-math-modeling"
+
+Copy-Item -Recurse -Force `
+  .\matlab-math-modeling `
+  "$env:USERPROFILE\.codex\skills\matlab-math-modeling"
 ```
 
 重启或刷新 Codex 后，可用类似下面的请求触发：
 
 > 使用 solve-graduate-math-modeling 读取这道赛题及附件，按每个问题和小问建立独立代码、结果与图片目录，完成模型比较、融合、论文和最终验证。
+
+需要单独调用 MATLAB 后端时：
+
+> 使用 matlab-math-modeling 完成这个小问的数据分析、优化求解、论文绘图和结果验证。
 
 ## 常用检查
 
