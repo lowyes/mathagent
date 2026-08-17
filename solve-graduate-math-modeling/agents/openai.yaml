@@ -1,0 +1,4 @@
+interface:
+  display_name: "研究生数学建模全流程"
+  short_description: "按问题与小问组织代码、图表、结果并生成匿名竞赛论文"
+  default_prompt: "Use $solve-graduate-math-modeling to solve this graduate mathematical modeling problem and produce an auditable paper."
