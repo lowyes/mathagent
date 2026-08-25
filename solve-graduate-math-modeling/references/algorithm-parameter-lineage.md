@@ -1,6 +1,6 @@
 # 算法公式与参数血缘契约
 
-每次首次使用算法时完成以下六段，缺一不可。
+每次首次使用算法时完成以下六段，缺一不可；同时按 [core-algorithm-flowcharts.md](core-algorithm-flowcharts.md) 和 [core-algorithm-pseudocode.md](core-algorithm-pseudocode.md) 将算法明确标记为核心或辅助算法。
 
 ## 1. 使用目的
 
@@ -50,6 +50,13 @@
       "name": "算法名",
       "purpose": "对应任务",
       "formula_reference": "论文节号或公式标签",
+      "is_core": true,
+      "core_reason": "产生全文关键结论并包含迭代与模型选择过程",
+      "pseudocode_anchor": "alg:q2-core",
+      "pseudocode_reference": "算法2",
+      "flowchart_source": "求解/问题二/小问1/代码/绘制核心算法流程图.py",
+      "flowchart_file": "求解/问题二/小问1/图/核心算法流程图.pdf",
+      "flowchart_reference": "正文图6",
       "parameters": [
         {
           "symbol": "lambda",

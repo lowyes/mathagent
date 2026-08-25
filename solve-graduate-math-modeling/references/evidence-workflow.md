@@ -41,6 +41,10 @@
 
 `status` 只能是 `passed`、`failed` 或 `inconclusive`。失败实验保留真实结果和失败含义，不删除、不改写成成功。每个进入最终方案的算法至少由一条 `passed` 实验覆盖。
 
+## 验证评估记录 `validation_methods`
+
+按 [validation-evaluation-integration.md](validation-evaluation-integration.md) 登记所有实际采用的交叉验证、混淆矩阵与指标评估、误差或残差分析、敏感性、鲁棒性、不确定性、可行性、收敛性、最优性、消融、基准对照、统计检验及仿真检查。每条记录必须关联一个真实实验、结果文件与定位，并通过 `paper_anchor` 指向正文中与被验证对象相邻的段落。验证结果必须写出解释和决策影响，不能只登记方法名称或指标数值。
+
 ## 发现与决策 `findings`
 
 记录跨阶段仍会影响后续工作的短结论：

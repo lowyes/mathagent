@@ -13,6 +13,7 @@
 \RequirePackage{enumitem}
 \RequirePackage{xcolor}
 \RequirePackage{listings}
+\RequirePackage[ruled,vlined,linesnumbered]{algorithm2e}
 \RequirePackage{fancyhdr}
 \RequirePackage{hyperref}
 
@@ -48,6 +49,14 @@
   showstringspaces=false,
   tabsize=4
 }
+
+\SetAlgorithmName{算法}{算法}{算法目录}
+\SetKwInput{KwIn}{输入}
+\SetKwInput{KwOut}{输出}
+\SetKw{Return}{返回}
+\SetAlgoCaptionSeparator{：}
+\SetAlFnt{\small}
+\SetAlCapFnt{\small\bfseries}
 
 \newenvironment{competitionabstract}
   {\thispagestyle{plain}\begin{center}\heiti\zihao{3} 摘\quad 要\end{center}\vspace{0.5em}}

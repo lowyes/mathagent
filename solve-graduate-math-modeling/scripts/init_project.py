@@ -60,12 +60,13 @@ def subquestion_section(section_no: int, question_no: int, sub_no: int) -> str:
 依次给出基础模型、约束或边界条件、参数来源与完整模型，解释每一项的现实含义。
 
 \\subsubsection{{求解方法与实现}}
-说明基线、最终算法、选择理由、随机种子、训练或求解设置以及实际采用的 fallback。
+说明基线、最终算法、核心/辅助分类及理由、随机种子、训练或求解设置以及实际采用的 fallback。若本小问包含核心算法，在完整公式和参数来源后使用 algorithm2e 给出带行号、输入、输出、循环/分支、终止与 fallback 的伪代码，再引用图形流程图，并解释二者与真实代码和输出字段的对应关系。
 
 \\subsubsection{{结果与验证}}
-从问题{chinese_number(question_no)}小问{sub_no}的结果目录引用核心结果表，并解释误差、可行性、敏感性或鲁棒性。
+\\label{{sec:q{question_no}-s{sub_no}-validation}}
+从问题{chinese_number(question_no)}小问{sub_no}的结果目录引用核心结果表。对每一种验证评估方法，依次说明验证对象、选择理由、必要定义、本题实际协议、指标或判据、真实结果及定位、结果解释和决策影响；不得写成与当前模型和结果脱节的通用介绍。
 
-% 图片必须保存在本小问的“图”目录。示例：
+% 图片及核心算法流程图必须保存在本小问的“图”目录，流程图源文件保存在“代码”目录。示例：
 % \\includegraphics[width=0.82\\textwidth]{{../求解/问题{chinese_number(question_no)}/小问{sub_no}/图/示例图.pdf}}
 
 \\subsubsection{{直接回答}}
@@ -96,6 +97,8 @@ def initialize(output: Path, mapping: list[tuple[int, int]], competition: str) -
             "results_locked": False,
             "abstract_status": "placeholder",
             "abstract_evidence_check": "pending",
+            "abstract_questions": [],
+            "abstract_scope_reason": "",
             "abstract_evidence": [],
         },
         "questions": [],
@@ -139,6 +142,7 @@ def initialize(output: Path, mapping: list[tuple[int, int]], competition: str) -
                 },
                 "algorithms": [],
                 "experiments": [],
+                "validation_methods": [],
                 "findings": [],
                 "claims": [],
                 "stage_gates": {

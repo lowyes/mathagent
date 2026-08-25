@@ -10,7 +10,10 @@ import re
 from pathlib import Path
 
 
-CODE_EXTENSIONS = {".py", ".ipynb", ".m", ".jl", ".r", ".sql", ".c", ".cc", ".cpp"}
+CODE_EXTENSIONS = {
+    ".py", ".ipynb", ".m", ".jl", ".r", ".sql", ".c", ".cc", ".cpp",
+    ".dot", ".gv", ".mmd", ".tex",
+}
 FIGURE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".pdf", ".svg", ".eps"}
 RESULT_EXTENSIONS = {
     ".csv", ".tsv", ".xlsx", ".xls", ".json", ".parquet", ".txt",
@@ -24,6 +27,13 @@ LITERATURE_STATUSES = {"adopted", "benchmarked", "rejected", "data_blocked"}
 LITERATURE_DIRECTNESS = {"direct", "adjacent", "method"}
 MODEL_COMPARISON_APPLICABILITY = {"required", "not_applicable"}
 MODEL_ROLES = {"baseline", "standalone", "ensemble"}
+VALIDATION_METHOD_TYPES = {
+    "out_of_sample", "cross_validation", "classification_metrics",
+    "error_analysis", "residual_analysis", "sensitivity", "robustness",
+    "uncertainty", "feasibility", "convergence", "optimality", "ablation",
+    "benchmark", "statistical_test", "simulation_check", "physical_boundary",
+    "other",
+}
 STAGE_GATE_KEYS = ("problem_analysis", "modeling", "computation", "paper")
 
 
@@ -35,6 +45,10 @@ def listed_paths(entries: object) -> set[str]:
     if not isinstance(entries, list):
         return set()
     return {str(item).replace("\\", "/") for item in entries if isinstance(item, str)}
+
+
+def strip_tex_comments(text: str) -> str:
+    return "\n".join(re.sub(r"(?<!\\)%.*", "", line) for line in text.splitlines())
 
 
 def digest(path: Path) -> str:
@@ -74,6 +88,20 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
 
     manifest_paths: set[Path] = set()
     figure_hashes: dict[str, str] = {}
+    core_algorithm_count = 0
+    pseudocode_anchors: set[str] = set()
+    paper_root = root / "论文"
+    paper_text = ""
+    if paper_root.is_dir():
+        paper_text = "\n".join(
+            strip_tex_comments(path.read_text(encoding="utf-8"))
+            for path in sorted(paper_root.rglob("*.tex"))
+        )
+    algorithm_blocks = re.findall(
+        r"\\begin\{algorithm\}(.*?)\\end\{algorithm\}",
+        paper_text,
+        flags=re.DOTALL,
+    )
     questions = project_manifest.get("questions", [])
     if not isinstance(questions, list) or not questions:
         errors.append("项目清单未定义任何问题")
@@ -155,6 +183,71 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
                         for field in ("name", "purpose", "formula_reference"):
                             if not str(algorithm.get(field, "")).strip():
                                 errors.append(f"{prefix}缺少 {field}")
+                        is_core = algorithm.get("is_core")
+                        if not isinstance(is_core, bool):
+                            errors.append(f"{prefix}缺少布尔字段 is_core")
+                        if not str(algorithm.get("core_reason", "")).strip():
+                            errors.append(f"{prefix}缺少 core_reason")
+                        if is_core is True:
+                            core_algorithm_count += 1
+                            for field in ("pseudocode_anchor", "pseudocode_reference"):
+                                if not str(algorithm.get(field, "")).strip():
+                                    errors.append(f"{prefix}作为核心算法却缺少 {field}")
+                            pseudocode_anchor = str(algorithm.get("pseudocode_anchor", "")).strip()
+                            if pseudocode_anchor in pseudocode_anchors:
+                                errors.append(f"{prefix}的伪代码标签重复：{pseudocode_anchor}")
+                            if pseudocode_anchor:
+                                pseudocode_anchors.add(pseudocode_anchor)
+                                label_token = f"\\label{{{pseudocode_anchor}}}"
+                                matching_blocks = [
+                                    block for block in algorithm_blocks if label_token in block
+                                ]
+                                if not matching_blocks:
+                                    errors.append(
+                                        f"{prefix}的伪代码未出现在 algorithm 环境中：{pseudocode_anchor}"
+                                    )
+                                elif len(matching_blocks) > 1:
+                                    errors.append(
+                                        f"{prefix}的伪代码标签对应多个 algorithm 环境：{pseudocode_anchor}"
+                                    )
+                                else:
+                                    block = matching_blocks[0]
+                                    for command in ("\\caption", "\\KwIn", "\\KwOut"):
+                                        if command not in block:
+                                            errors.append(
+                                                f"{prefix}的伪代码缺少 {command}：{pseudocode_anchor}"
+                                            )
+                            for field in ("flowchart_source", "flowchart_file", "flowchart_reference"):
+                                if not str(algorithm.get(field, "")).strip():
+                                    errors.append(f"{prefix}作为核心算法却缺少 {field}")
+                            flowchart_source = str(algorithm.get("flowchart_source", "")).strip().replace("\\", "/")
+                            if flowchart_source:
+                                source_path = root / flowchart_source
+                                if not source_path.is_file():
+                                    errors.append(f"{prefix}的流程图源文件不存在：{flowchart_source}")
+                                if Path(flowchart_source).suffix.lower() not in CODE_EXTENSIONS:
+                                    errors.append(f"{prefix}的流程图源文件类型不受支持：{flowchart_source}")
+                                expected_code_root = (sq_dir / "代码").resolve()
+                                try:
+                                    source_path.resolve().relative_to(expected_code_root)
+                                except ValueError:
+                                    errors.append(f"{prefix}的流程图源文件不在所属小问代码目录：{flowchart_source}")
+                                if flowchart_source not in listed_paths(manifest.get("code_files")):
+                                    errors.append(f"{prefix}的流程图源文件未登记到 code_files：{flowchart_source}")
+                            flowchart_file = str(algorithm.get("flowchart_file", "")).strip().replace("\\", "/")
+                            if flowchart_file:
+                                flowchart_path = root / flowchart_file
+                                if not flowchart_path.is_file():
+                                    errors.append(f"{prefix}的流程图文件不存在：{flowchart_file}")
+                                if Path(flowchart_file).suffix.lower() not in FIGURE_EXTENSIONS:
+                                    errors.append(f"{prefix}的流程图不是支持的图文件：{flowchart_file}")
+                                expected_figure_root = (sq_dir / "图").resolve()
+                                try:
+                                    flowchart_path.resolve().relative_to(expected_figure_root)
+                                except ValueError:
+                                    errors.append(f"{prefix}的流程图不在所属小问图目录：{flowchart_file}")
+                                if flowchart_file not in listed_paths(manifest.get("figure_files")):
+                                    errors.append(f"{prefix}的流程图未登记到 figure_files：{flowchart_file}")
                         algorithm_name = str(algorithm.get("name", "")).strip()
                         if algorithm_name:
                             accepted_algorithms.add(algorithm_name)
@@ -276,6 +369,63 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
                         f"最终算法缺少通过的实验记录 {relative(sq_dir, root)}："
                         + "、".join(sorted(uncovered_algorithms))
                     )
+
+                validation_methods = manifest.get("validation_methods", [])
+                if not isinstance(validation_methods, list) or not validation_methods:
+                    errors.append(f"已完成小问缺少与正文结合的验证评估记录：{relative(sq_dir, root)}")
+                else:
+                    validation_ids: set[str] = set()
+                    for method_index, method in enumerate(validation_methods, start=1):
+                        prefix = f"{relative(sq_dir, root)} 的第{method_index}种验证评估方法"
+                        if not isinstance(method, dict):
+                            errors.append(f"{prefix}不是对象")
+                            continue
+                        for field in (
+                            "id", "name", "target", "purpose", "applicability_reason",
+                            "procedure_reference", "data_protocol", "experiment_id",
+                            "evidence_file", "evidence_locator", "result_summary",
+                            "interpretation", "decision_impact", "paper_location",
+                            "paper_anchor",
+                        ):
+                            if not str(method.get(field, "")).strip():
+                                errors.append(f"{prefix}缺少 {field}")
+                        method_id = str(method.get("id", "")).strip()
+                        if method_id in validation_ids:
+                            errors.append(f"{prefix}的 id 重复：{method_id}")
+                        if method_id:
+                            validation_ids.add(method_id)
+                        method_type = str(method.get("type", "")).strip()
+                        if method_type not in VALIDATION_METHOD_TYPES:
+                            errors.append(f"{prefix}的 type 无效：{method_type}")
+                        experiment_id = str(method.get("experiment_id", "")).strip()
+                        if experiment_id and experiment_id not in experiment_ids:
+                            errors.append(f"{prefix}关联的实验不存在：{experiment_id}")
+                        criteria = method.get("criteria", [])
+                        if not isinstance(criteria, list) or not criteria:
+                            errors.append(f"{prefix}缺少指标或判据 criteria")
+                        else:
+                            for criterion_index, criterion in enumerate(criteria, start=1):
+                                criterion_prefix = f"{prefix}的第{criterion_index}个指标或判据"
+                                if not isinstance(criterion, dict):
+                                    errors.append(f"{criterion_prefix}不是对象")
+                                    continue
+                                for field in ("name", "definition_reference", "acceptance_rule"):
+                                    if not str(criterion.get(field, "")).strip():
+                                        errors.append(f"{criterion_prefix}缺少 {field}")
+                        evidence_file = str(method.get("evidence_file", "")).strip().replace("\\", "/")
+                        if evidence_file:
+                            if not (root / evidence_file).is_file():
+                                errors.append(f"{prefix}的证据文件不存在：{evidence_file}")
+                            if evidence_file not in listed_paths(manifest.get("result_files")):
+                                errors.append(f"{prefix}的证据文件未登记到 result_files：{evidence_file}")
+                            expected_result_root = (sq_dir / "结果").resolve()
+                            try:
+                                (root / evidence_file).resolve().relative_to(expected_result_root)
+                            except ValueError:
+                                errors.append(f"{prefix}的证据文件不在所属小问结果目录：{evidence_file}")
+                        paper_anchor = str(method.get("paper_anchor", "")).strip()
+                        if paper_anchor and f"\\label{{{paper_anchor}}}" not in paper_text:
+                            errors.append(f"{prefix}的正文标签不存在：{paper_anchor}")
 
                 comparison = manifest.get("model_comparison", {})
                 if not isinstance(comparison, dict):
@@ -441,6 +591,8 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
                 errors.append(f"结果文件不在小问结果目录：{rel}")
 
     if final:
+        if core_algorithm_count == 0:
+            errors.append("最终论文未识别任何核心算法；全文最核心的算法必须登记并附流程图")
         paper_workflow = project_manifest.get("paper_workflow", {})
         if not isinstance(paper_workflow, dict):
             errors.append("项目清单缺少 paper_workflow")
@@ -451,6 +603,38 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
             errors.append("摘要尚未标记为 final")
         if paper_workflow.get("abstract_evidence_check") != "passed":
             errors.append("摘要关键结果尚未完成逐问证据复核")
+        all_question_numbers = [
+            int(question.get("question", 0))
+            for question in questions
+            if isinstance(question, dict)
+        ]
+        configured_abstract_questions = paper_workflow.get("abstract_questions", [])
+        if configured_abstract_questions in (None, []):
+            abstract_question_numbers = all_question_numbers
+        elif not isinstance(configured_abstract_questions, list) or not all(
+            isinstance(number, int) for number in configured_abstract_questions
+        ):
+            errors.append("paper_workflow.abstract_questions 必须是整数数组；空数组表示全部问题")
+            abstract_question_numbers = all_question_numbers
+        else:
+            invalid_numbers = sorted(set(configured_abstract_questions) - set(all_question_numbers))
+            if invalid_numbers:
+                errors.append(f"摘要范围包含不存在的问题：{invalid_numbers}")
+            if len(configured_abstract_questions) != len(set(configured_abstract_questions)):
+                errors.append("paper_workflow.abstract_questions 不得包含重复问题")
+            abstract_question_numbers = [
+                number for number in all_question_numbers if number in configured_abstract_questions
+            ]
+            if set(abstract_question_numbers) != set(all_question_numbers) and not str(
+                paper_workflow.get("abstract_scope_reason", "")
+            ).strip():
+                errors.append("摘要未覆盖全部问题时必须填写 paper_workflow.abstract_scope_reason")
+        scoped_questions = [
+            question
+            for question in questions
+            if isinstance(question, dict)
+            and int(question.get("question", 0)) in abstract_question_numbers
+        ]
         abstract_evidence = paper_workflow.get("abstract_evidence", [])
         if not isinstance(abstract_evidence, list):
             errors.append("paper_workflow.abstract_evidence 必须是数组")
@@ -459,7 +643,7 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
         for entry in abstract_evidence:
             if isinstance(entry, dict) and isinstance(entry.get("question"), int):
                 evidence_by_question[int(entry["question"])] = entry
-        for question in questions:
+        for question in scoped_questions:
             if not isinstance(question, dict):
                 continue
             question_no = int(question.get("question", 0))
@@ -486,7 +670,7 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
             if "% ABSTRACT_STATUS: final" not in abstract_text:
                 errors.append("摘要文件仍是 placeholder，或缺少 % ABSTRACT_STATUS: final 标记")
             positions: list[int] = []
-            for question in questions:
+            for question in scoped_questions:
                 if not isinstance(question, dict):
                     continue
                 question_no = int(question.get("question", 0))
