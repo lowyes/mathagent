@@ -2,7 +2,7 @@
 
 面向中国研究生数学建模竞赛的 Codex Skill，提供从赛题读取、数据审计、逐问建模、模型比较与融合，到论文生成和交付验证的完整工作流。
 
-当前主 Skill 版本：`solve-graduate-math-modeling v3.0.0`（2026-09-20）。内部生成项目采用 `paper_workflow schema v3`；发布版本与工作流 schema 分开管理。
+当前主 Skill 版本：`solve-graduate-math-modeling v3.0.1`（2026-09-20）。内部生成项目采用 `paper_workflow schema v3`；发布版本与工作流 schema 分开管理。
 
 仓库包含两个可以独立安装、也可以协同调用的 Skill：
 
@@ -81,6 +81,8 @@ python .\solve-graduate-math-modeling\scripts\init_project.py --help
 ```powershell
 python .\solve-graduate-math-modeling\scripts\validate_project.py --help
 ```
+
+普通模式只检查结构和清单一致性，并在报告中给出 `validation_scope` 与 `completion_summary`；最终交付必须使用 `--final`。两种模式分别写入 `结构校验报告.json` 和 `最终交付校验报告.json`，避免后一次检查覆盖前一次记录。
 
 Python 绘图的基础依赖为 `numpy`、`pandas`、`matplotlib` 和 `seaborn`；MATLAB、LaTeX 及其他专业绘图库按具体赛题选用。
 

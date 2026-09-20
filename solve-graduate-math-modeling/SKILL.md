@@ -2,7 +2,7 @@
 name: solve-graduate-math-modeling
 description: End-to-end workflow and reusable LaTeX template for Chinese graduate mathematical modeling competitions, especially the Huawei Cup / China Graduate Mathematical Contest in Modeling. Use when Codex must read a modeling problem and attachments, decompose every problem into subquestions, keep each subquestion's code, figures, and results in its own folder, build auditable models, run and validate computations, write an anonymous Chinese competition paper, compile PDF, or check a graduate modeling submission.
 metadata:
-  version: "3.0.0"
+  version: "3.0.1"
 ---
 
 # Solve Graduate Math Modeling
@@ -49,6 +49,8 @@ Run the structural validator before writing and again before delivery:
 ```powershell
 python scripts/validate_project.py <project-directory>
 ```
+
+A non-final `ok: true` certifies structure and manifest consistency only. Read `validation_scope`, `completion_summary`, and warnings; it does not mean the solution or paper is complete.
 
 After the paper is compiled and visually inspected, mark the paper gate passed and run `python scripts/validate_project.py <project-directory> --final`.
 

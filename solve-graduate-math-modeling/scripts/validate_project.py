@@ -596,15 +596,39 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
     errors: list[str] = []
     warnings: list[str] = []
     checked: list[str] = []
+    completion_summary = {
+        "total": 0,
+        "pending": 0,
+        "in_progress": 0,
+        "complete": 0,
+        "blocked": 0,
+        "invalid": 0,
+    }
     root = project.resolve()
     project_manifest_path = root / "项目清单.json"
     if not project_manifest_path.is_file():
-        return {"ok": False, "errors": ["缺少 项目清单.json"], "warnings": [], "checked": []}
+        return {
+            "ok": False,
+            "final_mode": final,
+            "validation_scope": "final-delivery" if final else "structure-only",
+            "completion_summary": completion_summary,
+            "errors": ["缺少 项目清单.json"],
+            "warnings": [],
+            "checked": [],
+        }
 
     try:
         project_manifest = json.loads(project_manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        return {"ok": False, "errors": [f"项目清单无法读取：{exc}"], "warnings": [], "checked": []}
+        return {
+            "ok": False,
+            "final_mode": final,
+            "validation_scope": "final-delivery" if final else "structure-only",
+            "completion_summary": completion_summary,
+            "errors": [f"项目清单无法读取：{exc}"],
+            "warnings": [],
+            "checked": [],
+        }
 
     manifest_paths: set[Path] = set()
     figure_hashes: dict[str, str] = {}
@@ -665,8 +689,12 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
                 errors.append(f"schema_version 必须为正整数：{relative(manifest_path, root)}")
 
             status = manifest.get("status", "pending")
+            completion_summary["total"] += 1
             if status not in {"pending", "in_progress", "complete", "blocked"}:
+                completion_summary["invalid"] += 1
                 errors.append(f"状态无效 {relative(manifest_path, root)}：{status}")
+            else:
+                completion_summary[status] += 1
             if final and status != "complete":
                 errors.append(f"最终交付仍有未完成小问：{relative(sq_dir, root)}（{status}）")
             errors.extend(validate_revision_workflow(root, sq_dir, manifest))
@@ -2026,7 +2054,25 @@ def validate(project: Path, final: bool = False) -> dict[str, object]:
             if not isinstance(review_checks, list) or not any(str(item).strip() for item in review_checks):
                 errors.append("pdf_visual_review.checks 至少记录一项实际检查内容")
 
-    return {"ok": not errors, "final_mode": final, "errors": errors, "warnings": warnings, "checked": checked}
+    if not final:
+        unfinished = completion_summary["total"] - completion_summary["complete"]
+        if unfinished:
+            warnings.insert(
+                0,
+                "当前仅执行结构校验，ok=true 不代表项目已经完成："
+                f"仍有 {unfinished}/{completion_summary['total']} 个小问未完成；"
+                "最终交付请使用 --final。",
+            )
+
+    return {
+        "ok": not errors,
+        "final_mode": final,
+        "validation_scope": "final-delivery" if final else "structure-only",
+        "completion_summary": completion_summary,
+        "errors": errors,
+        "warnings": warnings,
+        "checked": checked,
+    }
 
 
 def main() -> None:
@@ -2036,7 +2082,8 @@ def main() -> None:
     parser.add_argument("--final", action="store_true", help="最终交付校验，同时要求论文质量门通过")
     args = parser.parse_args()
     report = validate(args.project, final=args.final)
-    output = args.report or (args.project / "结构校验报告.json")
+    default_report = "最终交付校验报告.json" if args.final else "结构校验报告.json"
+    output = args.report or (args.project / default_report)
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))
     raise SystemExit(0 if report["ok"] else 1)

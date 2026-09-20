@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.1 - 2026-09-20
+
+### Changed
+
+- Distinguished early structural validation from final-delivery validation through explicit `validation_scope` and per-status `completion_summary` fields.
+- Added a prominent warning when structural validation passes while one or more subquestions remain unfinished, preventing `ok=true` from being mistaken for project completion.
+- Kept structural and final reports separately as `结构校验报告.json` and `最终交付校验报告.json`.
+- Clarified that stage-gate requirements in ordinary validation apply when a subquestion is marked `complete`; pending work remains visible but is not misreported as delivered.
+
+### Tests
+
+- Added regression coverage for validation scope, completion counts, warning behavior, completed-project final scope, and distinct report filenames.
+
 ## 3.0.0 - 2026-09-20
 
 ### Added

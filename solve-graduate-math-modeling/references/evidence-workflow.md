@@ -136,7 +136,7 @@ schema v2 项目还要在建模前写清三件事：
 3. `computation`：代码运行、实验记录、结果文件、可行性检查及模型修订复核已通过。
 4. `paper`：结论—证据矩阵、模型评价、引用台账及双向引用、排版、PDF视觉检查和提交规则已通过。
 
-每个门包含 `status` 与 `checks`，`checks` 至少一项。门的 `status` 只有 `pending` 和 `passed` 两个取值，不要复用小问的 `in_progress` 或 `blocked`：门只回答"是否已经通过"。普通结构校验要求前三门通过；论文门可以暂留 `pending`（只报警告）。最终交付校验 `validate_project.py --final` 要求四门全部通过。
+每个门包含 `status` 与 `checks`，`checks` 至少一项。门的 `status` 只有 `pending` 和 `passed` 两个取值，不要复用小问的 `in_progress` 或 `blocked`：门只回答"是否已经通过"。当小问已标记为 `complete` 时，普通结构校验要求前三门通过，论文门可以暂留 `pending`（只报警告）；处于 `pending`、`in_progress` 或 `blocked` 的小问可接受早期结构检查，但报告会在 `completion_summary` 和警告中明确显示未完成，不能据此宣称项目已经完成。最终交付校验 `validate_project.py --final` 要求全部小问为 `complete` 且四门全部通过。
 
 ## 小问状态 `status`
 

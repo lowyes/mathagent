@@ -1206,6 +1206,59 @@ class SkillRegressionTests(unittest.TestCase):
             report = validate_project.validate(root, final=False)
             self.assertTrue(report["ok"], report["errors"])
 
+    def test_structure_validation_reports_scope_and_pending_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "project"
+            init_project.initialize(root, [(1, 2)], "结构校验范围测试")
+
+            report = validate_project.validate(root, final=False)
+
+            self.assertTrue(report["ok"], report["errors"])
+            self.assertEqual(report["validation_scope"], "structure-only")
+            self.assertEqual(report["completion_summary"]["total"], 2)
+            self.assertEqual(report["completion_summary"]["pending"], 2)
+            self.assertEqual(report["completion_summary"]["complete"], 0)
+            self.assertTrue(any("ok=true 不代表项目已经完成" in item for item in report["warnings"]))
+
+    def test_final_validation_reports_completion_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "project"
+            build_complete_project(root)
+            add_valid_compile_proof(root)
+
+            report = validate_project.validate(root, final=True)
+
+            self.assertTrue(report["ok"], report["errors"])
+            self.assertEqual(report["validation_scope"], "final-delivery")
+            self.assertEqual(report["completion_summary"]["total"], 1)
+            self.assertEqual(report["completion_summary"]["complete"], 1)
+            self.assertFalse(any("仅执行结构校验" in item for item in report["warnings"]))
+
+    def test_cli_keeps_structure_and_final_reports_separate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "project"
+            init_project.initialize(root, [(1, 1)], "校验报告命名测试")
+
+            structure = subprocess.run(
+                [sys.executable, str(SCRIPTS / "validate_project.py"), str(root)],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            final = subprocess.run(
+                [sys.executable, str(SCRIPTS / "validate_project.py"), str(root), "--final"],
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+
+            self.assertEqual(structure.returncode, 0, structure.stderr)
+            self.assertNotEqual(final.returncode, 0)
+            self.assertTrue((root / "结构校验报告.json").is_file())
+            self.assertTrue((root / "最终交付校验报告.json").is_file())
+
     def test_invalid_figure_signature_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "project"
