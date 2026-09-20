@@ -61,3 +61,22 @@
 `type` 可使用：`out_of_sample`、`cross_validation`、`classification_metrics`、`error_analysis`、`residual_analysis`、`sensitivity`、`robustness`、`uncertainty`、`feasibility`、`convergence`、`optimality`、`ablation`、`benchmark`、`statistical_test`、`simulation_check`、`physical_boundary` 或 `other`。
 
 每个已完成小问至少登记一种与任务相适应的验证方法。正文对应位置必须包含 `\label{paper_anchor}`；证据文件必须存在于所属小问结果目录并登记到 `result_files`。若一种方法验证多个模型，可共享一条记录，但必须在 `target` 和解释中明确覆盖范围。
+
+对预测、拟合、聚类、优化、评价与仿真等实验型任务，`experiment_id` 必须指向真实实验记录；对确定性规则、解析恒等式或直接统计检验，`experiment_id` 可以为空，但验证仍需指向可复核结果和正文位置。
+
+## 模型评价、改进与推广
+
+模型评价是验证结果的汇总判断，不是重新介绍指标，也不要求单设章节。最终交付前在 `paper_workflow.model_review` 完成以下对应关系：
+
+```text
+经证据支持的优势
+局限及其证据、影响
+局限 → 改进方向
+推广场景 → 共享数学结构 → 改变的假设 → 重新验证要求
+```
+
+- 优势可以为空，但必须说明为何不作正向概括；不得为保持“优缺点齐全”制造套话。
+- 局限至少一项，且必须指向结果、验证或假设边界的真实文件与定位，不能只写“精度有待提高”。
+- 每项局限至少对应一项改进。改进的 `status` 区分 `implemented` 与 `future`；已实现改进必须给出结果证据，未来改进必须写清新增数据、实验或工程条件，不能伪装成已验证结论。
+- 推广是可选项。只有能够指出共享数学结构、变化假设和重新验证项目时才声明 `applicable`；否则登记 `not_applicable` 及理由。
+- 独立“模型评价与推广”章节仍由论文结构 Profile 决定；即使不单设章节，上述局限和边界也应在对应问题附近自然写出。

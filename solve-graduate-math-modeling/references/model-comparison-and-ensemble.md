@@ -1,8 +1,10 @@
 # 多模型比较与模型融合
 
-预测、分类及其他存在可替代学习器的任务，默认执行“至少三个非融合候选 + 至少一个融合模型”的同框比较。三个非融合候选中至少包含一个可解释基线，并尽量覆盖不同模型族，例如统计/线性、树模型、核方法或神经网络。数据规模、标签或计算条件不满足时，保留拒绝理由，不用低质量模型凑数量。
+预测、分类及其他存在可替代学习器的任务，最低比较“一个可靠基线 + 一个主要候选”。当不同模型族对应真实的数据假设或方法选择时，再扩展到三个或更多候选；不为满足数量机械加入低质量模型。
 
-描述统计、确定性公式计算、纯机理求解和没有多个预测器的优化问题可以标为 `not_applicable`，但必须说明原因。若优化问题本身存在多种模型或算法，应比较基线启发式、数学规划/精确法和改进法；“模型融合”只有在能定义合法的解组合、集成决策或多场景策略时才使用。
+融合不是默认必选项。只有同时满足以下条件时才进入实验：成员模型各自达到基本可用标准；样本外残差、错误类别或场景表现存在可解释互补性；训练期内部能够生成严格 OOF/滚动样本外成员预测。条件不满足时，在 `ensemble_reason` 登记未测试或拒绝原因即可。
+
+描述统计、确定性公式计算、纯机理求解和没有多个预测器的优化问题可以标为 `not_applicable`，但必须说明原因。若优化问题本身存在多种模型或算法，应比较至少一个可靠基线和一个主要方案；“模型融合”只有在能定义合法的解组合、集成决策或多场景策略时才使用。
 
 ## 统一比较
 
@@ -43,19 +45,20 @@
     "primary_metric": "五折滚动 WMAPE",
     "candidates": [
       {"name": "星期中位数", "family": "seasonal baseline", "role": "baseline", "experiment_id": "E01"},
-      {"name": "岭回归", "family": "regularized linear", "role": "standalone", "experiment_id": "E01"},
-      {"name": "梯度提升", "family": "tree boosting", "role": "standalone", "experiment_id": "E01"},
-      {"name": "等权模型融合", "family": "averaging ensemble", "role": "ensemble", "experiment_id": "E01"}
+      {"name": "岭回归", "family": "regularized linear", "role": "standalone", "experiment_id": "E01"}
     ],
-    "ensemble": {
-      "method": "等权平均",
-      "members": ["星期中位数", "岭回归", "梯度提升"],
-      "weight_source": "预先固定为1/3，不读取验证标签",
-      "leakage_control": "每折成员仅用该折训练段拟合",
-      "formula_reference": "正文问题二模型融合公式"
-    },
+    "ensemble": {},
+    "ensemble_reason": "两个成员的滚动残差相关性较高，缺少稳定互补性，因此不测试融合",
     "result_file": "求解/问题二/小问1/结果/滚动时间验证指标.csv",
     "decision": "按五折主指标选择；融合若未胜出则保留为已测试候选"
   }
 }
 ```
+
+字段取值与交叉引用以 `scripts/validate_project.py` 为准，其中三条最容易漏掉：
+
+- `applicability` 只能是 `required` 或 `not_applicable`，初始化写入的 `pending` 不是合法终值。
+- `role` 只能是 `baseline`、`standalone` 或 `ensemble`；`required` 时至少需要两个非融合候选，其中一个为 `baseline`。若没有融合候选，必须填写 `ensemble_reason`。
+- `candidates` 里的每个 `name` 都必须同时登记在本小问的 `algorithms` 中，名称完全一致——**包括作为对照的基线和比较后放弃的候选**。它们是论文里模型选择的证据，所以同样需要公式、参数血缘和一条 `passed` 实验。只在文献中考察、从未运行的方法不要写进 `candidates`，留在 `literature_candidates` 里。
+
+`experiment_id` 必须指向本小问 `experiments` 中真实存在的编号；`ensemble.members` 只能取自非融合候选的名称。若测试融合，`ensemble` 还必须登记 `qualification_evidence`、`complementarity_evidence` 和 `oof_evidence`，分别说明成员为何合格、误差互补证据在哪里、严格样本外成员预测如何获得。

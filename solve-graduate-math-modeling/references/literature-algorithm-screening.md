@@ -1,12 +1,12 @@
-# 真实文献与算法筛选
+# 真实文献与方法筛选
 
-在确定最终算法前完成本筛选。目标不是追逐“最新”或“最复杂”，而是从真实、可核验且与赛题数据条件相容的研究中形成候选集，再用同一套无泄漏实验决定采用、拒绝或暂缓。
+当 `literature_review.applicability` 为 `required` 或 `conditional` 时使用本筛选。目标不是追逐“最新”或“最复杂”，而是从真实、可核验且与赛题数据条件相容的研究中形成候选集，再用与任务匹配的验证决定采用、拒绝或暂缓。题面已完整给出确定规则时可以登记 `not_required` 及理由，不为形式完整虚构引用。
 
 ## 检索与核验
 
 1. 按“业务对象 + 小问任务 + 方法类别 + forecasting/optimization”等组合检索 Google Scholar、Crossref、出版社页面和作者公开稿。
 2. 优先核验出版社论文页、DOI 落地页、期刊/会议官网或作者机构仓储。搜索摘要只能用于发现线索，不能作为最终引文依据。
-3. 每个主要小问在网络可用时至少记录 3 个经过核验的候选，其中尽量包含 1 个直接研究相同业务场景的来源。没有直接文献时，明确标为相邻领域或方法迁移。
+3. 主要小问在网络可用时形成足以覆盖“可靠基线、主要方法选择及关键替代方案”的候选证据集；候选数量服从真实决策需要，不为凑数添加无关论文。优先寻找直接研究相同业务场景的来源；没有直接文献时，明确标为相邻领域或方法迁移。
 4. 不凭记忆填写题名、作者、年份、卷期、页码或 DOI。无法核验时将文献门标为 pending/blocked，禁止虚构引用。
 5. “顶刊”“一区”等分区结论具有年份和口径依赖。除非已核验当年 JCR、中科院分区或赛事指定目录，否则使用“领域主流期刊”“高质量同行评议研究”等可证实表述。
 
@@ -16,7 +16,7 @@
 - `adjacent`：业务或数据结构相近，可迁移评估设计、特征、约束或算法。
 - `method`：仅方法本身有价值，必须额外论证为何适用于本题。
 
-期刊声望不能代替相关性。直接但朴素的餐饮预测研究，通常比不匹配数据条件的通用深度模型更有迁移价值。
+期刊声望不能代替相关性。与当前任务直接匹配的朴素研究，通常比数据条件不匹配的复杂通用模型更有迁移价值。
 
 ## 候选记录
 
@@ -32,13 +32,13 @@
   "verification_url": "https://出版社或官方页面",
   "problem_match": "与本小问相同和不同之处",
   "directness": "direct",
-  "algorithm": "论文采用的核心算法",
+  "method": "论文采用的核心方法",
   "formula_or_method": "需要迁移的公式、模型结构或实验设计",
   "required_data": "训练长度、字段、频率、层级、标签及外生变量",
   "available_fields": "本题实际拥有及缺失的字段",
   "transfer_decision": "为何采用、仅基准测试、拒绝或等待数据",
   "status": "benchmarked",
-  "used_by_algorithms": ["本项目算法名"]
+  "used_by_methods": ["本项目方法名"]
 }
 ```
 
@@ -49,29 +49,42 @@
 - `rejected`：因效果、假设、复杂度或解释性不合适而拒绝；
 - `data_blocked`：文献方法有价值，但题目缺少其必要数据。
 
-`adopted` 和 `benchmarked` 必须指向清单中真实存在的算法名，并由实验记录覆盖。拒绝与数据受限的候选也要保留，防止后续重复试错或把不可实现的方法写成创新点。
+`adopted` 和 `benchmarked` 必须指向清单中真实存在的方法名；实验型任务还要由实验记录覆盖。拒绝与数据受限的候选也要保留，防止后续重复试错或把不可实现的方法写成创新点。
+
+`used_by_methods` 里的名称逐个比对本小问 `methods` 的 `name`，拼写不一致会直接报错；旧项目的 `algorithm`、`used_by_algorithms` 与 `algorithms` 继续兼容。`adopted` 和 `benchmarked` 的关联不允许留空。`year` 必须是整数（不是 `"2024"` 这样的字符串），`verification_url` 必须以 `http://` 或 `https://` 开头，`directness` 和 `status` 必须取本文列出的枚举值。
+
+“候选证据足以支撑当前方法选择”和“优先包含 `direct` 来源”是人工写作要求，不是简单数量门。校验器只在文献门为 `required` 且候选为空时报错，在必需筛选中没有 `direct` 候选时给出警告；`conditional` 可以暂时为空但会提示复核。校验通过不等于筛选充分，仍需人工说明候选集为何足以支持采用或拒绝决定。
 
 ## 从论文提取什么
 
 至少提取研究对象、样本数量/时间跨度、预测跨度、输入特征、损失或目标函数、约束、数据划分、基线、评价指标、主要局限。只摘录算法名称不算完成筛选。
 
-将论文方法转入本题时，必须重新写出本题符号下的公式，并在 `algorithms.parameters` 中追踪参数来源。论文中的超参数、成本系数或阈值不能无条件照搬；应通过本题数据校准、敏感性分析或明确的场景假设获得。
+将论文方法转入本题时，必须重新写出本题符号下的公式或操作定义，并在 `methods.parameters` 中追踪适用参数来源。论文中的超参数、成本系数或阈值不能无条件照搬；应通过本题数据校准、敏感性分析或明确的场景假设获得。
 
 所有候选必须在相同时间切分、相同预测窗口、相同目标与指标下比较。时间序列禁止随机打乱；优化方法必须比较可行性、目标值、稳定性和计算成本。复杂模型若没有显著且稳定改进，不因“论文先进”而采用。
 
-## 餐厅需求预测与运营优化的参考路线
-
-以下是当前自助量贩餐厅赛题可复用的已核验路线，使用时仍应打开正式页面复核书目信息和本题适配性。
-
-| 小问方向 | 真实研究 | 可借鉴内容 | 本题迁移判断 |
-|---|---|---|---|
-| 订单篮关联 | Agrawal & Srikant, *Fast Algorithms for Mining Association Rules*, VLDB 1994 | 支持度、置信度及候选项集剪枝 | 直接适用于订单篮，但须报告覆盖率与稀疏性 |
-| 客流/销售预测 | Rodrigues et al., *Journal of Cleaner Production* 435 (2024), 140265, DOI: 10.1016/j.jclepro.2023.140265 | 餐饮短期需求中比较 RF、LSTM，并把预测误差连接到浪费和缺货 | 场景直接；先按本题样本长度和外生字段检查可实现性 |
-| 多步预测 | Lim et al., *International Journal of Forecasting* 37 (2021), 1748–1764, DOI: 10.1016/j.ijforecast.2021.03.012 | Temporal Fusion Transformer、已知未来变量、变量选择和可解释注意力 | 数据丰富时作为候选；单店短序列且外生变量不足时标记 data_blocked |
-| 餐厅跨时期预测 | *Decision Support Systems* (2024), DOI: 10.1016/j.dss.2024.114291 | 内外部数据、市场阶段和 ML/DL 的联合比较 | 支持加入节假日、天气、活动和阶段切换，而非盲目加深模型 |
-| 菜品/SKU层级预测 | Makridakis et al., M5 Accuracy, *International Journal of Forecasting* 38 (2022), 1346–1364, DOI: 10.1016/j.ijforecast.2021.11.013 | 多层级序列、统一滚动窗口、全局树模型与强基线 | 适合完整菜品流水；若菜品明细只覆盖少量订单，不宜宣称细粒度预测可靠 |
-| 概率需求/安全库存 | M5 Uncertainty, *International Journal of Forecasting*, DOI: 10.1016/j.ijforecast.2021.10.009 | 分位数预测和层级不确定性评价 | 有足够历史与库存损失函数时，用于安全备餐分位数 |
-| 菜单优化 | *European Journal of Operational Research* 328 (2026), 668–679, DOI: 10.1016/j.ejor.2025.06.015 | 营养优化与菜谱可接受性/补全结合 | 营养约束可迁移；缺少偏好与替代标签时，机器学习兼容性模块应 data_blocked |
-| 易腐库存 | *European Journal of Operational Research* 329 (2026), 124–137, DOI: 10.1016/j.ejor.2025.07.009 | 预测依赖的状态基库存策略和固定保质期 | 需要库存、损耗、保质期、缺货与浪费成本；缺失时只作扩展方向 |
+## 证据链要求
 
 筛选结果应形成一条连续证据链：真实论文提出候选与条件 → 本题字段审计判断可迁移性 → 本题公式和参数血缘 → 无泄漏实验 → 最终采用或拒绝 → 论文中如实表述边界。
+
+## 论文级引用台账
+
+`literature_candidates` 管理方法候选，`methods.parameters` 管理参数来源；正式论文还需在 `paper_workflow.citation_ledger` 汇总实际进入正文的外部主张。不要复制整套文献记录，只登记正文真正引用的主张、引用键、核验来源和使用位置：
+
+```json
+{
+  "id": "S01",
+  "claim": "某工艺参数范围来自官方标准",
+  "claim_role": "core",
+  "source_type": "standard",
+  "authority": "primary",
+  "citation_key": "standard2025",
+  "verification_source": "标准正式页面、DOI或可定位的官方文件",
+  "used_in": ["问题三式(18)", "表6参数来源"],
+  "verified": true
+}
+```
+
+`source_type` 可取 `official_rule`、`standard`、`dataset`、`primary_research`、`application_research`、`book`、`technical_document`、`web_resource` 或 `software`；`authority` 可取 `primary`、`peer_reviewed`、`authoritative_secondary` 或 `discovery_only`。博客、论坛和普通网页可用于发现线索，但 `discovery_only` 不得支撑 `core` 主张。
+
+最终检查同时核对四组键：正文 `\cite{}`、`citation_ledger.citation_key`、`\bibitem{}` 或 `.bib` 条目、参考文献表实际条目。四者应双向一致；无正文引用的条目删除，有正文引用但未定义或未核验的条目补齐。引用格式服从当届官方规范，台账不把某一种期刊格式永久硬编码进 Skill。

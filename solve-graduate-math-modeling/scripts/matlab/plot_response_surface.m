@@ -1,4 +1,4 @@
-function plot_response_surface(X,Y,Z,xLabel,yLabel,zLabel,outputFile)
+function plot_response_surface(X,Y,Z,xLabel,yLabel,zLabel,outputFile,surfaceTitle,contourTitle)
 %PLOT_RESPONSE_SURFACE Export a publication-style surface and contour pair.
 % X, Y and Z must be equally sized numeric matrices, typically from meshgrid.
 
@@ -10,6 +10,8 @@ arguments
     yLabel (1,1) string
     zLabel (1,1) string
     outputFile (1,1) string
+    surfaceTitle (1,1) string = "响应面"
+    contourTitle (1,1) string = "投影等高线"
 end
 
 if ~isequal(size(X),size(Y),size(Z))
@@ -26,14 +28,14 @@ nexttile(tl);
 surf(X,Y,Z,'EdgeColor','none','FaceAlpha',0.96);
 view(42,28); grid on; box on;
 xlabel(xLabel); ylabel(yLabel); zlabel(zLabel);
-title('Response surface','FontWeight','bold');
+title(surfaceTitle,'FontWeight','bold');
 colorbar;
 
 nexttile(tl);
 contourf(X,Y,Z,16,'LineColor','none');
 axis tight; grid on; box on;
 xlabel(xLabel); ylabel(yLabel);
-title('Projected contour','FontWeight','bold');
+title(contourTitle,'FontWeight','bold');
 colorbar;
 
 colormap(f,parula);

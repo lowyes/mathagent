@@ -10,11 +10,62 @@
 
 ## 推荐组织
 
-1. 开头用一个自然段说明现实背景、数据难点与本文要解决的核心矛盾。若数据划分会影响可信度，可在此交代样本单位和防泄漏口径。
-2. 按题面顺序写问题段。默认每个顶层问题以粗体“针对问题一：”等开头；段内沿着“处理原因—实际步骤—关键结果—结论”推进。
+1. 开头背景通常控制在1--3句，说明现实对象、数据难点与本文要解决的核心矛盾；随后立即进入逐问内容。若数据划分会影响可信度，可在此交代样本单位和防泄漏口径。
+2. 按题面顺序写问题段。每个顶层问题以粗体“问题一：”或“针对问题一：”开头，全文统一一种形式；段内沿着“处理原因—实际步骤—关键结果—结论”推进。
 3. 小问很多时可把同一问题拆成相邻的两个自然段，不必把全部内容塞进一个超长句。
 4. 结尾总结可省略。若正文已经在最后一个问题段给出最终方案和适用条件，不再追加空泛的“综上所述”。
-5. 关键词通常取3–6个，覆盖研究对象、核心模型和决策口径。
+5. 关键词默认取4--6个，覆盖研究对象、核心模型和关键数学机制；当届模板另有数量要求时服从官方规定。
+
+“问题任务、建模思路、可成立的模型亮点、主要结果、验证或边界”是宏观覆盖检查，不是固定五段顺序。逐问写作仍让方法和它产生的结果尽量相邻，避免先集中罗列模型、最后统一写“结果表明”。没有非平凡设计时不强行制造亮点；没有验证证据时不写空泛的模型评价。
+
+## 写作前摘要规划
+
+正式起草前，先在 `paper_workflow.abstract_plan` 中为摘要范围内的每个顶层问题建立规划。规划负责判断“写什么”，正文负责决定“怎样自然表达”；不得把字段名直接写成论文小标题。schema v2 及以上项目的最小结构为：
+
+```json
+{
+  "paper_workflow": {
+    "schema_version": 3,
+    "abstract_plan": [
+      {
+      "question": 2,
+      "task": "本问需要直接回答的任务",
+      "inherits_from": [1],
+      "retained": ["沿用问题一的目标函数与基础状态"],
+      "modifications": ["取消约束6", "增加返回道等待时间决策变量"],
+      "new_difficulty": "新增决策变量与原调度状态发生耦合",
+      "core_method": "扩展后的动态规划模型",
+      "model_highlight": {
+        "status": "qualified",
+        "type": "decision_variable_design",
+        "statement": "将返回道等待状态纳入统一决策",
+        "problem_link": "对应取消约束后出现的等待时间选择",
+        "evidence": {
+          "files": ["求解/问题二/小问1/结果/模型比较.csv"],
+          "locator": "扩展模型行与基础模型行"
+        }
+      },
+      "key_result": "最终方案总用时及返回道使用次数",
+      "direct_answer": "给出满足新条件的最终调度方案",
+      "validation_or_boundary": "与基础模型比较后的改进及适用规模"
+      }
+    ]
+  }
+}
+```
+
+- `task`、`core_method`、`key_result`、`direct_answer` 必填，且分别回答任务、处理、证据结果和题目答案，不能彼此重复。
+- `inherits_from` 只登记真实的上游问题。非空时必须填写 `retained`、`modifications` 与 `new_difficulty`，摘要优先采用“在前问基础上……”的增量叙述，不重新复述整套模型。
+- `validation_or_boundary` 可为空；只有它增加真实验证信息、适用条件或解释边界时才进入摘要。
+- 规划中的 `key_result` 仍由下文的 `abstract_evidence` 提供文件和字段定位，规划文字不能替代证据登记。
+
+### 模型亮点资格门
+
+`model_highlight.status` 只能为 `qualified` 或 `not_applicable`。亮点不是每问必备项：
+
+- `qualified` 仅用于特殊决策变量、约束处理、模型组合、动态或分阶段结构、目标函数改造、算法与问题结构的针对性结合，或经受控比较验证的关键改进；同时填写 `type`、具体 `statement`、`problem_link` 和可定位证据。`type` 取 `decision_variable_design`、`constraint_handling`、`model_combination`、`staged_or_dynamic_modeling`、`objective_redesign`、`problem_structure_alignment` 或 `validated_model_improvement`。
+- `not_applicable` 用于没有必要单列亮点的常规模型，并填写 `reason`。此时正常写任务、方法、结果和答案，不把“采用XGBoost”“使用遗传算法”等算法名称本身包装成创新。
+- 亮点证据只证明实际做过该设计及其得到的结果；若没有受控实验或理论依据，不把性能差异上升为机制或因果结论。
 
 ## 用户限定摘要范围
 
@@ -27,7 +78,35 @@
 }
 ```
 
-`abstract_questions` 省略或为空数组表示覆盖全部顶层问题。只为摘要实际覆盖的问题登记和检查 `abstract_evidence`；正文题目仍须完整，除非用户另有要求。
+`abstract_questions` 省略或为空数组表示覆盖全部顶层问题。只为摘要实际覆盖的问题登记和检查 `abstract_evidence`；正文题目仍须完整，除非用户另有要求。范围小于全部问题时，`abstract_scope_reason` 必填。
+
+## 摘要证据登记 `paper_workflow`
+
+摘要由 `项目清单.json` 的 `paper_workflow` 对象背书，字段取值以 `scripts/validate_project.py` 为准：
+
+```json
+{
+  "paper_workflow": {
+    "schema_version": 3,
+    "results_locked": true,
+    "abstract_status": "final",
+    "abstract_evidence_check": "passed",
+    "abstract_evidence": [
+      {
+        "question": 2,
+        "checked": true,
+        "files": ["求解/问题二/小问1/结果/滚动验证指标.csv"],
+        "locator": "model=星期中位数 行，WMAPE 字段"
+      }
+    ]
+  }
+}
+```
+
+- `results_locked` 必须是布尔 `true`，`abstract_status` 必须是 `final`，`abstract_evidence_check` 必须是 `passed`。三者都表示人工确认已完成，结果未锁定前不要提前改写。
+- `abstract_evidence` 每个纳入摘要的问题一条记录：`question` 是整数问题号（不是"问题二"这样的中文串），`checked` 必须是布尔 `true`，`files` 至少一个真实存在的结果文件路径（相对项目根目录），`locator` 必须指出字段、行、键或工作表。
+- `paper_profile.sources.abstract` 指向的正式摘要 TeX 文件必须包含 `% ABSTRACT_STATUS: final` 标记；结果锁定前保持 `% ABSTRACT_STATUS: placeholder`。内部文件名默认使用 ASCII `sections/abstract.tex`，不以中文文件名识别摘要。
+- 每个纳入问题需要一个独立粗体标签，形式可为 `\textbf{问题一：}` 或 `\textbf{针对问题一：}`，且全文统一、顺序与题面一致。
 
 ## 降低模板化语言
 
@@ -58,7 +137,9 @@
 ## 交付前自检
 
 - 摘要范围是否符合题面、模板和用户明确要求？
+- `abstract_plan` 是否逐问区分了独立建模与上游继承，且继承问只写真实增量？
 - 每个纳入摘要的问题是否都有方法、真实结果和直接结论？
+- 所谓模型亮点是否通过资格门；若无亮点，是否避免用算法名称冒充创新？
 - 是否出现正文没有的模型、数值或因果解释？
 - 是否清楚区分训练、验证和测试用途？
 - 是否存在套话、重复判断、过度形容或无统计依据的“显著”？

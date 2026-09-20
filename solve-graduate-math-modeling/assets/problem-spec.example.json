@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "competition": "中国研究生数学建模竞赛（以当届官方通知为准）",
+  "paper_profile": {
+    "structure_profile": "shared_data",
+    "shared_data_section": true,
+    "assumptions_symbols_mode": "combined",
+    "model_evaluation_section": true,
+    "model_evaluation_rationale": "各问评价口径不同，末章集中总结稳健性、局限和推广条件。",
+    "question_heading_style": "concise",
+    "structure_rationale": "多个问题共享同一数据审计、缺失处理和单位口径，因此设置公共数据章。"
+  },
+  "questions": [
+    {
+      "number": 1,
+      "title": "状态判定与预测",
+      "analysis_mode": "top_level",
+      "subquestions": [
+        {
+          "label": "a",
+          "explicit": true,
+          "title": "按题面阈值判定状态",
+          "task_profile": {
+            "primary": "deterministic_rule",
+            "primary_reason": "题面给出了完整阈值和边界，输出由确定性规则直接产生，不涉及统计学习或参数拟合。",
+            "secondary": [],
+            "outputs": [
+              {
+                "name": "逐对象状态标签",
+                "unit": "类别",
+                "granularity": "每个对象一条",
+                "acceptance": "全部对象均有且仅有一个标签，边界值按题面不等号处理"
+              },
+              {
+                "name": "各状态数量",
+                "unit": "个",
+                "granularity": "按状态汇总",
+                "acceptance": "各状态数量之和等于有效对象总数"
+              }
+            ]
+          },
+          "argument_plan": {
+            "decision_question": "题面规则如何转化为无歧义的逐对象判定，并保证边界值和汇总数量正确？",
+            "evidence_required": ["边界样例复核", "标签完整性与数量守恒检查"],
+            "interpretation_boundary": "结论仅是按题面阈值得到的确定性分类，不解释类别形成的因果机制。"
+          },
+          "literature_review": {
+            "applicability": "not_required",
+            "reason": "判定阈值与边界均由题面完整给定。"
+          },
+          "methods": [
+            {
+              "id": "Q1A-M1",
+              "name": "题面阈值判定",
+              "method_type": "deterministic_rule",
+              "representations": ["definition", "result_table"],
+              "is_core": true
+            }
+          ]
+        },
+        {
+          "label": "b",
+          "explicit": true,
+          "title": "建立样本外预测模型",
+          "task_profile": {
+            "primary": "prediction",
+            "primary_reason": "题目要求对未观测样本给出数值预测并报告误差，核心证据必须来自无泄漏样本外验证。",
+            "secondary": [],
+            "outputs": [
+              {
+                "name": "样本外预测值",
+                "unit": "按题面变量单位填写",
+                "granularity": "每个预测对象或时点一条",
+                "acceptance": "预测范围、时间窗口和对象索引与题面完全一致"
+              },
+              {
+                "name": "预测误差与适用边界",
+                "unit": "与所选指标一致",
+                "granularity": "按验证折及总体汇总",
+                "acceptance": "基线与候选模型使用同一无泄漏划分、同一预测窗口和同一指标口径"
+              }
+            ]
+          },
+          "argument_plan": {
+            "decision_question": "在相同无泄漏验证协议下，主要候选是否相对可靠基线提供稳定增益，并足以承担最终预测？",
+            "evidence_required": ["逐折样本外指标", "候选与基线的同口径比较", "误差或残差诊断"],
+            "interpretation_boundary": "性能差异只支持模型选择和预测适用范围，不自动证明输入变量具有因果作用。"
+          },
+          "literature_review": {
+            "applicability": "required",
+            "reason": "预测模型与无泄漏验证协议需要真实方法依据。"
+          },
+          "methods": [
+            {
+              "id": "Q1B-M1",
+              "name": "可靠朴素基线",
+              "method_type": "predictive_model",
+              "representations": ["formula", "experiment_table"],
+              "is_core": false
+            },
+            {
+              "id": "Q1B-M2",
+              "name": "主要预测模型",
+              "method_type": "predictive_pipeline",
+              "representations": ["formula", "flowchart", "experiment_table", "diagnostic_figure"],
+              "is_core": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "style_transfer": {
+    "enabled": false,
+    "sources": [],
+    "card": {
+      "common_features": [],
+      "variants": [],
+      "current_choices": []
+    }
+  }
+}
